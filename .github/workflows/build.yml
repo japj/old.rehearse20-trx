@@ -8,10 +8,17 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
 
     steps:
+    - name: setup libasound2-dev on ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt install libasound2-dev libopus-dev libortp-dev
+      
     - uses: actions/checkout@v2
     - name: make
       run: make
