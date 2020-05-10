@@ -245,7 +245,9 @@ int main(int argc, char *argv[])
 
 	ortp_init();
 	ortp_scheduler_init();
+#if USE_ORTP13
 	ortp_set_log_level_mask(NULL, ORTP_WARNING|ORTP_ERROR);
+#endif
 	session = create_rtp_send(addr, port);
 	assert(session != NULL);
 
