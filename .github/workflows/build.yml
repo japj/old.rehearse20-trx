@@ -8,8 +8,11 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
 
     steps:
     - name: setup libasound2-dev on ubuntu
