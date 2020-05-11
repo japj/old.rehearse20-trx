@@ -1,0 +1,12 @@
+--- ./src/CMakeLists.org	2020-05-11 19:51:49.000000000 +0200
++++ ./src/CMakeLists.txt	2020-05-11 19:51:54.000000000 +0200
+@@ -95,6 +95,9 @@
+ 	set_target_properties(ortp-static PROPERTIES OUTPUT_NAME ortp)
+ 	target_compile_definitions(ortp-static PRIVATE "ORTP_EXPORTS")
+ 	target_link_libraries(ortp-static INTERFACE ${LIBS})
++	target_link_libraries(ortp-static PUBLIC bctoolbox-static PRIVATE ${LIBS})
++		
++	
+ 	install(TARGETS ortp-static EXPORT ${EXPORT_TARGET_NAME}Targets
+ 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
