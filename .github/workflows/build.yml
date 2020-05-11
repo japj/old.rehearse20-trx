@@ -20,5 +20,28 @@ jobs:
       run: sudo apt install libasound2-dev libopus-dev libortp-dev
       
     - uses: actions/checkout@v2
+      with:
+        submodules: true
+        
+    - uses: lukka/get-cmake@latest 
+    
+    - name: Set vcpkg's response file path used as part of cache's key.
+      uses: lukka/set-shell-env@master
+      with:
+        VCPKGRESPONSEFILE: ${{ github.workspace }}/vcpkg_${{ matrix.triplet }}.txt
+        
+    # Restore from cache the previously built ports. If "cache miss", then provision vcpkg, install desired ports, finally cache everything for the next run.
+    - name: Restore from cache and run vcpkg
+      uses: lukka/run-vcpkg@v2
+      with:
+        # Response file stored in source control, it provides the list of ports and triplet(s).
+        vcpkgArguments: '@${{ env.VCPKGRESPONSEFILE }}'
+        # Location of the vcpkg as submodule of the repository.
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        # Since the cache must be invalidated when content of the response file changes, let's
+        # compute its hash and append this to the computed cache's key.
+        appendedCacheKey: ${{ hashFiles( env.VCPKGRESPONSEFILE ) }} ${{ hashFiles( 'vcpkg-ports/**' ) }}
+      
     - name: make
       run: make
+  
