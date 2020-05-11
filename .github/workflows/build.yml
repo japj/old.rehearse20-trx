@@ -20,7 +20,7 @@ jobs:
     steps:
     - name: setup libasound2-dev on ubuntu
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt install libasound2-dev libopus-dev libortp-dev
+      run: sudo apt install libasound2-dev
       
     - uses: actions/checkout@v2
       with:
