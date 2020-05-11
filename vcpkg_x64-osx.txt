@@ -2,4 +2,4 @@ opus
 portaudio
 --triplet
 x64-osx
---overlay-ports=../vcpkg-ports
+--overlay-ports=vcpkg-ports
