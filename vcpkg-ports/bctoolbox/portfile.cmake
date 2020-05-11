@@ -31,7 +31,7 @@ vcpkg_configure_cmake(
         ${FEATURE_OPTIONS}
     PREFER_NINJA)
 vcpkg_install_cmake()
-#vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/Opus)
+vcpkg_fixup_cmake_targets(CONFIG_PATH share/bctoolbox/cmake)
 vcpkg_copy_pdbs()
 
 file(INSTALL
