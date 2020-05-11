@@ -40,4 +40,5 @@ file(INSTALL
      ${CURRENT_PACKAGES_DIR}/share/bctoolbox
      RENAME copyright)
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
