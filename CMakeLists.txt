@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.10)
 
 # Integrate with vcpkg installed ports
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
@@ -15,7 +15,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 project (rehearse20-trx)
 
 #find_package(portaudio CONFIG REQUIRED)
-find_package(ALSA CONFIG REQUIRED)
+#find_package(ALSA CONFIG REQUIRED)
 find_package(Opus CONFIG REQUIRED)
 find_package(ortp CONFIG REQUIRED)
 
@@ -24,6 +24,14 @@ find_package(ortp CONFIG REQUIRED)
 # SET(PA_PKGCONFIG_LDFLAGS "${PA_PKGCONFIG_LDFLAGS} -lasound")
 
 add_executable(rx rx.c device.c sched.c)
+#target_link_libraries(rx PRIVATE alsa)
+target_link_libraries(rx PRIVATE Opus::opus)
+target_link_libraries(rx PRIVATE portaudio_static)
+target_link_libraries(rx PRIVATE ortp ortp-static)
 
 add_executable(tx tx.c device.c sched.c)
+#target_link_libraries(rx PRIVATE alsa)
+target_link_libraries(tx PRIVATE Opus::opus)
+target_link_libraries(tx PRIVATE portaudio_static)
+target_link_libraries(tx PRIVATE ortp ortp-static)
 
