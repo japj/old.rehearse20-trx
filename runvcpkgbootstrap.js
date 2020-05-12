@@ -1,7 +1,7 @@
 /**
  * This script bootstraps vcpkg and uses it to install the required package port scripts
  */
-const { execFileSync, spawn } = require('child_process');
+const { execFileSync, spawn, spawnSync } = require('child_process');
 const { existsSync } = require('fs');
 const { join } = require('path');
 
@@ -17,6 +17,8 @@ const vcpkgBinary = (process.platform === 'win32') ?
     "vcpkg\\vcpkg.exe" : "vcpkg/vcpkg";
 
 function spawnBootstrap() {
+    spawnSync("git submodule init", {shell:true, stdio:'inherit'});
+    spawnSync("git submodule update" , {shell:true, stdio:'inherit'});
     if (existsSync(vcpkgBinary)) {
         console.log("found " + vcpkgBinary + " .. starting PortInstall")
         spawnPortInstall();
