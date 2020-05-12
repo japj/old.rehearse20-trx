@@ -25,6 +25,7 @@ vcpkg_check_linkage(
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
+        -DENABLE_SHARED=OFF
         -DENABLE_POLARSSL=OFF
         -DENABLE_TESTS_COMPONENT=OFF
         -DENABLE_TESTS=OFF 

@@ -27,6 +27,7 @@ vcpkg_check_linkage(
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
+        -DENABLE_SHARED=NO
         -DENABLE_DOC=NO
         -DENABLE_PERF=YES
         ${FEATURE_OPTIONS}
