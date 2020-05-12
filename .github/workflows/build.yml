@@ -45,6 +45,10 @@ jobs:
         # compute its hash and append this to the computed cache's key.
         appendedCacheKey: ${{ hashFiles( env.VCPKGRESPONSEFILE ) }} ${{ hashFiles( 'vcpkg-ports/**' ) }}
       
-    - name: make
-      run: make
+    - name: run-cmake
+      uses: lukka/run-cmake@v2.4
+      with:
+        useVcpkgToolchainFile: true  
+        
   
+    
