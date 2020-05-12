@@ -21,6 +21,10 @@ vcpkg_check_linkage(
     ${ONLY_STATIC_CRT}
 )
 
+if (WIN32)
+    # disable treat warnings as errors on windows for now
+    set(FEATURE_OPTIONS -DENABLE_STRICT=OFF)
+endif()
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
