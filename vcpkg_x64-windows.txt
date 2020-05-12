@@ -1,0 +1,6 @@
+opus
+portaudio
+ortp
+--triplet
+x64-windows-static
+--overlay-ports=../vcpkg-ports
