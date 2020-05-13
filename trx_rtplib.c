@@ -22,7 +22,9 @@ RtpSession *create_rtp_sendrecv(const char *send_addr_desc, const int send_port,
     if (rtp_session_set_dscp(session, 40) != 0)
         abort();
 
-    rtp_session_set_local_addr(session, recv_addr_desc, recv_port, -1);
+    if (rtp_session_set_local_addr(session, recv_addr_desc, recv_port, -1) != 0)
+        abort();
+
     rtp_session_enable_adaptive_jitter_compensation(session, TRUE);
     rtp_session_set_jitter_compensation(session, jitter);  /* ms */
     rtp_session_set_time_jump_limit(session, jitter * 16); /* ms */
