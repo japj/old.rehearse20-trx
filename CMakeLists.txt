@@ -31,7 +31,7 @@ target_link_libraries(rx PRIVATE ${PORTAUDIO_LIBRARIES})
 target_link_libraries(rx PRIVATE ${ORTP_LIBRARIES})
 target_link_libraries(rx PRIVATE ${BCTOOLBOX_LIBRARIES})
 
-add_executable(tx tx.c device.c sched.c)
+add_executable(tx tx.c device.c sched.c tx_rtplib.c tx_alsalib.c)
 target_link_libraries(tx PRIVATE asound)
 target_link_libraries(tx PRIVATE ${OPUS_LIBRARIES})
 target_link_libraries(tx PRIVATE ${PORTAUDIO_LIBRARIES})
