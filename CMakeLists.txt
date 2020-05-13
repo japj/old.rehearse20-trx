@@ -24,7 +24,7 @@ find_package(ortp CONFIG REQUIRED)
 # SET(PA_LIBRARY_DEPENDENCIES ${PA_LIBRARY_DEPENDENCIES} ${ALSA_LIBRARIES})
 # SET(PA_PKGCONFIG_LDFLAGS "${PA_PKGCONFIG_LDFLAGS} -lasound")
 
-add_executable(rx rx.c device.c sched.c)
+add_executable(rx rx.c device.c sched.c rx_rtplib.c rx_alsalib.c)
 target_link_libraries(rx PRIVATE asound)
 target_link_libraries(rx PRIVATE ${OPUS_LIBRARIES})
 target_link_libraries(rx PRIVATE ${PORTAUDIO_LIBRARIES})
