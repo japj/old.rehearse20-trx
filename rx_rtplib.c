@@ -9,8 +9,8 @@ static void timestamp_jump(RtpSession *session, void *a, void *b, void *c)
 	rtp_session_resync(session);
 }
 
-RtpSession* create_rtp_recv(const char *addr_desc, const int port,
-		unsigned int jitter)
+RtpSession *create_rtp_recv(const char *addr_desc, const int port,
+							unsigned int jitter)
 {
 	RtpSession *session;
 
@@ -20,12 +20,12 @@ RtpSession* create_rtp_recv(const char *addr_desc, const int port,
 	rtp_session_set_local_addr(session, addr_desc, port, -1);
 	rtp_session_set_connected_mode(session, FALSE);
 	rtp_session_enable_adaptive_jitter_compensation(session, TRUE);
-	rtp_session_set_jitter_compensation(session, jitter); /* ms */
+	rtp_session_set_jitter_compensation(session, jitter);  /* ms */
 	rtp_session_set_time_jump_limit(session, jitter * 16); /* ms */
 	if (rtp_session_set_payload_type(session, 0) != 0)
 		abort();
 	if (rtp_session_signal_connect(session, "timestamp_jump",
-					timestamp_jump, 0) != 0)
+								   timestamp_jump, 0) != 0)
 	{
 		abort();
 	}
@@ -43,30 +43,34 @@ RtpSession* create_rtp_recv(const char *addr_desc, const int port,
 }
 
 int run_rx(RtpSession *session,
-		OpusDecoder *decoder,
-		snd_pcm_t *snd,
-		const unsigned int channels,
-		const unsigned int rate)
+		   OpusDecoder *decoder,
+		   snd_pcm_t *snd,
+		   const unsigned int channels,
+		   const unsigned int rate)
 {
 	int ts = 0;
 
-	for (;;) {
+	for (;;)
+	{
 		int r, have_more;
 		char buf[32768];
 		void *packet;
 
-		r = rtp_session_recv_with_ts(session, (uint8_t*)buf,
-				sizeof(buf), ts, &have_more);
+		r = rtp_session_recv_with_ts(session, (uint8_t *)buf,
+									 sizeof(buf), ts, &have_more);
 		assert(r >= 0);
 		assert(have_more == 0);
-		if (r == 0) {
+		if (r == 0)
+		{
 			packet = NULL;
 			if (verbose > 1)
 				fputc('#', stderr);
-		} else {
+		}
+		else
+		{
 			packet = buf;
 			if (verbose > 1)
-				fputc('.', stderr);
+				fputc('r', stderr);
 		}
 
 		r = play_one_frame(packet, r, decoder, snd, channels);
