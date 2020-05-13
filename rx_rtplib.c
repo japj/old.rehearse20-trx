@@ -2,7 +2,7 @@
 
 unsigned int verbose; // in rx.c
 
-static void timestamp_jump(RtpSession *session, void *a, void *b, void *c)
+void timestamp_jump(RtpSession *session, void *a, void *b, void *c)
 {
 	if (verbose > 1)
 		fputc('|', stderr);

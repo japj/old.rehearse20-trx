@@ -18,6 +18,8 @@ extern "C"
 			   const unsigned int channels,
 			   const unsigned int rate);
 
+	void timestamp_jump(RtpSession *session, void *a, void *b, void *c);
+
 #ifdef __cplusplus
 }
 #endif

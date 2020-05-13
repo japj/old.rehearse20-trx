@@ -38,7 +38,7 @@ target_link_libraries(tx PRIVATE ${PORTAUDIO_LIBRARIES})
 target_link_libraries(tx PRIVATE ${ORTP_LIBRARIES})
 target_link_libraries(tx PRIVATE ${BCTOOLBOX_LIBRARIES})
 
-add_executable(trx trx.cpp device.c sched.c tx_rtplib.c tx_alsalib.c rx_rtplib.c rx_alsalib.c)
+add_executable(trx trx.cpp device.c sched.c tx_rtplib.c tx_alsalib.c rx_rtplib.c rx_alsalib.c trx_rtplib.c)
 target_link_libraries(trx PRIVATE asound)
 target_link_libraries(trx PRIVATE ${OPUS_LIBRARIES})
 target_link_libraries(trx PRIVATE ${PORTAUDIO_LIBRARIES})
