@@ -64,21 +64,36 @@ static void usage(FILE *fd)
                 "at 48000Hz the permitted values are 120, 240, 480 or 960.\n");
 }
 
+#define DO_SEND 1
+#define DO_RECEIVE 0
+
 int main(int argc, char *argv[])
 {
     int r, error;
     size_t bytes_per_frame;
     unsigned int ts_per_frame;
-    snd_pcm_t *input_snd, *output_snd;
+
+#if DO_SEND
+    snd_pcm_t *input_snd;
     OpusEncoder *encoder;
+#endif
+#if DO_RECEIVE
+    snd_pcm_t *output_snd;
     OpusDecoder *decoder;
+#endif
+
     RtpSession *sendrecv_session;
 
     /* command-line options */
-    const char *input_device = DEFAULT_DEVICE,
-               *output_device = DEFAULT_DEVICE,
-               *send_addr = DEFAULT_ADDR,
-               *pid = NULL;
+    const char
+#if DO_SEND
+        *input_device = DEFAULT_DEVICE,
+#endif
+#if DO_RECEIVE
+        *output_device = DEFAULT_DEVICE,
+#endif
+        *send_addr = DEFAULT_ADDR,
+        *pid = NULL;
     unsigned int buffer = DEFAULT_BUFFER,
                  rate = DEFAULT_RATE,
                  jitter = DEFAULT_JITTER,
@@ -121,9 +136,11 @@ int main(int argc, char *argv[])
         case 'm':
             buffer = atoi(optarg);
             break;
+#if DO_RECEIVE
         case 'o':
             output_device = optarg;
             break;
+#endif
         case 'p':
             receive_port = atoi(optarg);
             break;
@@ -154,6 +171,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+#if DO_RECEIVE
     decoder = opus_decoder_create(rate, channels, &error);
     if (decoder == NULL)
     {
@@ -161,7 +179,7 @@ int main(int argc, char *argv[])
                 opus_strerror(error));
         return -1;
     }
-
+#endif
     bytes_per_frame = kbps * 1024 * frame / rate / 8;
 
     /* Follow the RFC, payload 0 has 8kHz reference rate */
@@ -172,7 +190,15 @@ int main(int argc, char *argv[])
     ortp_scheduler_init();
     ortp_set_log_level_mask(NULL, ORTP_WARNING | ORTP_ERROR);
 
+#if DO_RECEIVE
+#if DO_SEND
     sendrecv_session = create_rtp_sendrecv(send_addr, send_port, "0.0.0.0", receive_port, jitter);
+#else
+    sendrecv_session = create_rtp_recv("0.0.0.0", receive_port, jitter);
+#endif
+#else
+    sendrecv_session = create_rtp_send(send_addr, send_port);
+#endif
     assert(sendrecv_session != NULL);
 
     r = snd_pcm_open(&input_snd, input_device, SND_PCM_STREAM_CAPTURE, 0);
@@ -186,6 +212,7 @@ int main(int argc, char *argv[])
     if (set_alsa_sw(input_snd) == -1)
         return -1;
 
+#if DO_RECEIVE
     r = snd_pcm_open(&output_snd, output_device, SND_PCM_STREAM_PLAYBACK, 0);
     if (r < 0)
     {
@@ -196,6 +223,7 @@ int main(int argc, char *argv[])
         return -1;
     if (set_alsa_sw(output_snd) == -1)
         return -1;
+#endif
 
     if (pid)
         go_daemon(pid);
@@ -204,14 +232,12 @@ int main(int argc, char *argv[])
     /*r = run_tx(input_snd, channels, frame, encoder, bytes_per_frame,
                ts_per_frame, send_session);*/
 
-#define DO_SEND 1
 #if DO_SEND
     std::thread send_thread(run_tx, input_snd, channels, frame, encoder, bytes_per_frame,
                             ts_per_frame, sendrecv_session);
 #endif
     /*r = run_rx(receive_session, decoder, output_snd, channels, rate);*/
 
-#define DO_RECEIVE 1
 #if DO_RECEIVE
     std::thread receive_thread(run_rx, sendrecv_session, decoder, output_snd, channels, rate);
 #endif
@@ -226,8 +252,10 @@ int main(int argc, char *argv[])
     if (snd_pcm_close(input_snd) < 0)
         abort();
 
+#if DO_RECEIVE
     if (snd_pcm_close(output_snd) < 0)
         abort();
+#endif
 
     rtp_session_destroy(sendrecv_session);
 
@@ -235,7 +263,8 @@ int main(int argc, char *argv[])
     ortp_global_stats_display();
 
     opus_encoder_destroy(encoder);
+#if DO_RECEIVE
     opus_decoder_destroy(decoder);
-
+#endif
     return r;
 }
