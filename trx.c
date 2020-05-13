@@ -1,0 +1,222 @@
+
+#include <netdb.h>
+#include <string.h>
+#include <unistd.h>
+extern char *optarg;
+
+#include <sys/socket.h>
+#include <sys/types.h>
+
+#include "tx_alsalib.h"
+#include "tx_rtplib.h"
+#include "rx_alsalib.h"
+#include "rx_rtplib.h"
+
+#include "defaults.h"
+#include "device.h"
+#include "notice.h"
+#include "sched.h"
+
+unsigned int verbose = DEFAULT_VERBOSE;
+
+static void usage(FILE *fd)
+{
+    fprintf(fd, "Usage: trx [<parameters>]\n"
+                "Real-time audio transmitter and receiver over IP\n");
+
+    fprintf(fd, "\nAudio device (ALSA) parameters:\n");
+    fprintf(fd, "  -i <dev>    Input Device name (default '%s')\n",
+            DEFAULT_DEVICE);
+    fprintf(fd, "  -o <dev>    Output Device name (default '%s')\n",
+            DEFAULT_DEVICE);
+    fprintf(fd, "  -m <ms>     Buffer time (default %d milliseconds)\n",
+            DEFAULT_BUFFER);
+
+    fprintf(fd, "\nNetwork parameters:\n");
+    fprintf(fd, "  -h <addr>   IP address to send to (default %s)\n",
+            DEFAULT_ADDR);
+    fprintf(fd, "  -s <port>   UDP port number to send to (default %d)\n",
+            DEFAULT_PORT);
+    fprintf(fd, "  -p <port>   UDP port number to receive on (default %d)\n",
+            DEFAULT_PORT);
+    fprintf(fd, "  -j <ms>     Jitter buffer (default %d milliseconds)\n",
+            DEFAULT_JITTER);
+
+    fprintf(fd, "\nEncoding parameters:\n");
+    fprintf(fd, "  -r <rate>   Sample rate (default %dHz)\n",
+            DEFAULT_RATE);
+    fprintf(fd, "  -c <n>      Number of channels (default %d)\n",
+            DEFAULT_CHANNELS);
+    fprintf(fd, "  -f <n>      Frame size (default %d samples, see below)\n",
+            DEFAULT_FRAME);
+    fprintf(fd, "  -b <kbps>   Bitrate (approx., default %d)\n",
+            DEFAULT_BITRATE);
+
+    fprintf(fd, "\nProgram parameters:\n");
+    fprintf(fd, "  -v <n>      Verbosity level (default %d)\n",
+            DEFAULT_VERBOSE);
+    fprintf(fd, "  -D <file>   Run as a daemon, writing process ID to the given file\n");
+
+    fprintf(fd, "\nAllowed frame sizes (-f) are defined by the Opus codec. For example,\n"
+                "at 48000Hz the permitted values are 120, 240, 480 or 960.\n");
+}
+
+int main(int argc, char *argv[])
+{
+    int r, error;
+    size_t bytes_per_frame;
+    unsigned int ts_per_frame;
+    snd_pcm_t *input_snd, *output_snd;
+    OpusEncoder *encoder;
+    OpusDecoder *decoder;
+    RtpSession *send_session;
+    RtpSession *receive_session;
+
+    /* command-line options */
+    const char *input_device = DEFAULT_DEVICE,
+               *output_device = DEFAULT_DEVICE,
+               *send_addr = DEFAULT_ADDR,
+               *pid = NULL;
+    unsigned int buffer = DEFAULT_BUFFER,
+                 rate = DEFAULT_RATE,
+                 jitter = DEFAULT_JITTER,
+                 channels = DEFAULT_CHANNELS,
+                 frame = DEFAULT_FRAME,
+                 kbps = DEFAULT_BITRATE,
+                 receive_port = DEFAULT_PORT,
+                 send_port = DEFAULT_PORT;
+
+    fputs(COPYRIGHT "\n", stderr);
+
+    for (;;)
+    {
+        int c;
+
+        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:v:D:");
+        if (c == -1)
+            break;
+
+        switch (c)
+        {
+        case 'b':
+            kbps = atoi(optarg);
+            break;
+        case 'c':
+            channels = atoi(optarg);
+            break;
+        case 'f':
+            frame = atol(optarg);
+            break;
+        case 'h':
+            send_addr = optarg;
+            break;
+        case 'i':
+            input_device = optarg;
+            break;
+        case 'j':
+            jitter = atoi(optarg);
+            break;
+        case 'm':
+            buffer = atoi(optarg);
+            break;
+        case 'o':
+            output_device = optarg;
+            break;
+        case 'p':
+            receive_port = atoi(optarg);
+            break;
+        case 'r':
+            rate = atoi(optarg);
+            break;
+        case 's':
+            send_port = atoi(optarg);
+            break;
+        case 'v':
+            verbose = atoi(optarg);
+            break;
+        case 'D':
+            pid = optarg;
+            break;
+        default:
+            usage(stderr);
+            return -1;
+        }
+    }
+
+    encoder = opus_encoder_create(rate, channels, OPUS_APPLICATION_AUDIO,
+                                  &error);
+    if (encoder == NULL)
+    {
+        fprintf(stderr, "opus_encoder_create: %s\n",
+                opus_strerror(error));
+        return -1;
+    }
+
+    decoder = opus_decoder_create(rate, channels, &error);
+    if (decoder == NULL)
+    {
+        fprintf(stderr, "opus_decoder_create: %s\n",
+                opus_strerror(error));
+        return -1;
+    }
+
+    bytes_per_frame = kbps * 1024 * frame / rate / 8;
+
+    /* Follow the RFC, payload 0 has 8kHz reference rate */
+
+    ts_per_frame = frame * 8000 / rate;
+
+    ortp_init();
+    ortp_scheduler_init();
+    ortp_set_log_level_mask(NULL, ORTP_WARNING | ORTP_ERROR);
+    send_session = create_rtp_send(send_addr, send_port);
+    assert(send_session != NULL);
+
+    r = snd_pcm_open(&input_snd, input_device, SND_PCM_STREAM_CAPTURE, 0);
+    if (r < 0)
+    {
+        aerror("snd_pcm_open", r);
+        return -1;
+    }
+    if (set_alsa_hw(input_snd, rate, channels, buffer * 1000) == -1)
+        return -1;
+    if (set_alsa_sw(input_snd) == -1)
+        return -1;
+
+    r = snd_pcm_open(&output_snd, output_device, SND_PCM_STREAM_PLAYBACK, 0);
+    if (r < 0)
+    {
+        aerror("snd_pcm_open", r);
+        return -1;
+    }
+    if (set_alsa_hw(output_snd, rate, channels, buffer * 1000) == -1)
+        return -1;
+    if (set_alsa_sw(output_snd) == -1)
+        return -1;
+
+    if (pid)
+        go_daemon(pid);
+
+    go_realtime();
+    r = run_tx(input_snd, channels, frame, encoder, bytes_per_frame,
+               ts_per_frame, send_session);
+
+    if (snd_pcm_close(input_snd) < 0)
+        abort();
+
+    r = run_rx(receive_session, decoder, output_snd, channels, rate);
+
+    if (snd_pcm_close(output_snd) < 0)
+        abort();
+
+    rtp_session_destroy(receive_session);
+    rtp_session_destroy(send_session);
+
+    ortp_exit();
+    ortp_global_stats_display();
+
+    opus_encoder_destroy(encoder);
+    opus_decoder_destroy(decoder);
+
+    return r;
+}
