@@ -7,10 +7,13 @@ extern char *optarg;
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <thread>
+
 #include "tx_alsalib.h"
 #include "tx_rtplib.h"
 #include "rx_alsalib.h"
 #include "rx_rtplib.h"
+#include "trx_rtplib.h"
 
 #include "defaults.h"
 #include "device.h"
@@ -69,8 +72,7 @@ int main(int argc, char *argv[])
     snd_pcm_t *input_snd, *output_snd;
     OpusEncoder *encoder;
     OpusDecoder *decoder;
-    RtpSession *send_session;
-    RtpSession *receive_session;
+    RtpSession *sendrecv_session;
 
     /* command-line options */
     const char *input_device = DEFAULT_DEVICE,
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
     {
         int c;
 
-        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:v:D:");
+        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:s:v:D:");
         if (c == -1)
             break;
 
@@ -169,8 +171,9 @@ int main(int argc, char *argv[])
     ortp_init();
     ortp_scheduler_init();
     ortp_set_log_level_mask(NULL, ORTP_WARNING | ORTP_ERROR);
-    send_session = create_rtp_send(send_addr, send_port);
-    assert(send_session != NULL);
+
+    sendrecv_session = create_rtp_sendrecv(send_addr, send_port, "0.0.0.0", receive_port, jitter);
+    assert(sendrecv_session != NULL);
 
     r = snd_pcm_open(&input_snd, input_device, SND_PCM_STREAM_CAPTURE, 0);
     if (r < 0)
@@ -198,19 +201,35 @@ int main(int argc, char *argv[])
         go_daemon(pid);
 
     go_realtime();
-    r = run_tx(input_snd, channels, frame, encoder, bytes_per_frame,
-               ts_per_frame, send_session);
+    /*r = run_tx(input_snd, channels, frame, encoder, bytes_per_frame,
+               ts_per_frame, send_session);*/
+
+#define DO_SEND 1
+#if DO_SEND
+    std::thread send_thread(run_tx, input_snd, channels, frame, encoder, bytes_per_frame,
+                            ts_per_frame, sendrecv_session);
+#endif
+    /*r = run_rx(receive_session, decoder, output_snd, channels, rate);*/
+
+#define DO_RECEIVE 1
+#if DO_RECEIVE
+    std::thread receive_thread(run_rx, sendrecv_session, decoder, output_snd, channels, rate);
+#endif
+
+#if DO_SEND
+    send_thread.join();
+#endif
+#if DO_RECEIVE
+    receive_thread.join();
+#endif
 
     if (snd_pcm_close(input_snd) < 0)
         abort();
 
-    r = run_rx(receive_session, decoder, output_snd, channels, rate);
-
     if (snd_pcm_close(output_snd) < 0)
         abort();
 
-    rtp_session_destroy(receive_session);
-    rtp_session_destroy(send_session);
+    rtp_session_destroy(sendrecv_session);
 
     ortp_exit();
     ortp_global_stats_display();
