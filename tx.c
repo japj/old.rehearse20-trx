@@ -19,7 +19,8 @@
 
 #include <netdb.h>
 #include <string.h>
-
+#include <unistd.h>
+extern char *optarg;
 
 #include <sys/socket.h>
 #include <sys/types.h>
