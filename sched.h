@@ -20,7 +20,16 @@
 #ifndef MISC_H
 #define MISC_H
 
-int go_realtime(void);
-int go_daemon(const char *pid_file);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    int go_realtime(void);
+    int go_daemon(const char *pid_file);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
