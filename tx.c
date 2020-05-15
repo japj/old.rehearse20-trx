@@ -38,37 +38,37 @@ unsigned int verbose = DEFAULT_VERBOSE;
 static void usage(FILE *fd)
 {
 	fprintf(fd, "Usage: tx [<parameters>]\n"
-		"Real-time audio transmitter over IP\n");
+				"Real-time audio transmitter over IP\n");
 
 	fprintf(fd, "\nAudio device (ALSA) parameters:\n");
 	fprintf(fd, "  -d <dev>    Device name (default '%s')\n",
-		DEFAULT_DEVICE);
+			DEFAULT_DEVICE);
 	fprintf(fd, "  -m <ms>     Buffer time (default %d milliseconds)\n",
-		DEFAULT_BUFFER);
+			DEFAULT_BUFFER);
 
 	fprintf(fd, "\nNetwork parameters:\n");
 	fprintf(fd, "  -h <addr>   IP address to send to (default %s)\n",
-		DEFAULT_ADDR);
+			DEFAULT_ADDR);
 	fprintf(fd, "  -p <port>   UDP port number (default %d)\n",
-		DEFAULT_PORT);
+			DEFAULT_PORT);
 
 	fprintf(fd, "\nEncoding parameters:\n");
 	fprintf(fd, "  -r <rate>   Sample rate (default %dHz)\n",
-		DEFAULT_RATE);
+			DEFAULT_RATE);
 	fprintf(fd, "  -c <n>      Number of channels (default %d)\n",
-		DEFAULT_CHANNELS);
+			DEFAULT_CHANNELS);
 	fprintf(fd, "  -f <n>      Frame size (default %d samples, see below)\n",
-		DEFAULT_FRAME);
+			DEFAULT_FRAME);
 	fprintf(fd, "  -b <kbps>   Bitrate (approx., default %d)\n",
-		DEFAULT_BITRATE);
+			DEFAULT_BITRATE);
 
 	fprintf(fd, "\nProgram parameters:\n");
 	fprintf(fd, "  -v <n>      Verbosity level (default %d)\n",
-		DEFAULT_VERBOSE);
+			DEFAULT_VERBOSE);
 	fprintf(fd, "  -D <file>   Run as a daemon, writing process ID to the given file\n");
 
 	fprintf(fd, "\nAllowed frame sizes (-f) are defined by the Opus codec. For example,\n"
-		"at 48000Hz the permitted values are 120, 240, 480 or 960.\n");
+				"at 48000Hz the permitted values are 120, 240, 480 or 960.\n");
 }
 
 int main(int argc, char *argv[])
@@ -82,25 +82,27 @@ int main(int argc, char *argv[])
 
 	/* command-line options */
 	const char *device = DEFAULT_DEVICE,
-		*addr = DEFAULT_ADDR,
-		*pid = NULL;
+			   *addr = DEFAULT_ADDR,
+			   *pid = NULL;
 	unsigned int buffer = DEFAULT_BUFFER,
-		rate = DEFAULT_RATE,
-		channels = DEFAULT_CHANNELS,
-		frame = DEFAULT_FRAME,
-		kbps = DEFAULT_BITRATE,
-		port = DEFAULT_PORT;
+				 rate = DEFAULT_RATE,
+				 channels = DEFAULT_CHANNELS,
+				 frame = DEFAULT_FRAME,
+				 kbps = DEFAULT_BITRATE,
+				 port = DEFAULT_PORT;
 
 	fputs(COPYRIGHT "\n", stderr);
 
-	for (;;) {
+	for (;;)
+	{
 		int c;
 
 		c = getopt(argc, argv, "b:c:d:f:h:m:p:r:v:D:");
 		if (c == -1)
 			break;
 
-		switch (c) {
+		switch (c)
+		{
 		case 'b':
 			kbps = atoi(optarg);
 			break;
@@ -138,10 +140,11 @@ int main(int argc, char *argv[])
 	}
 
 	encoder = opus_encoder_create(rate, channels, OPUS_APPLICATION_AUDIO,
-				&error);
-	if (encoder == NULL) {
+								  &error);
+	if (encoder == NULL)
+	{
 		fprintf(stderr, "opus_encoder_create: %s\n",
-			opus_strerror(error));
+				opus_strerror(error));
 		return -1;
 	}
 
@@ -149,16 +152,17 @@ int main(int argc, char *argv[])
 
 	/* Follow the RFC, payload 0 has 8kHz reference rate */
 
-	ts_per_frame = frame * 8000 / rate;
+	ts_per_frame = frame; //*8000 / rate;
 
 	ortp_init();
 	ortp_scheduler_init();
-	ortp_set_log_level_mask(NULL, ORTP_WARNING|ORTP_ERROR);
+	ortp_set_log_level_mask(NULL, ORTP_WARNING | ORTP_ERROR);
 	session = create_rtp_send(addr, port);
 	assert(session != NULL);
 
 	r = snd_pcm_open(&snd, device, SND_PCM_STREAM_CAPTURE, 0);
-	if (r < 0) {
+	if (r < 0)
+	{
 		aerror("snd_pcm_open", r);
 		return -1;
 	}
@@ -172,7 +176,7 @@ int main(int argc, char *argv[])
 
 	go_realtime();
 	r = run_tx(snd, channels, frame, encoder, bytes_per_frame,
-		ts_per_frame, session);
+			   ts_per_frame, session);
 
 	if (snd_pcm_close(snd) < 0)
 		abort();

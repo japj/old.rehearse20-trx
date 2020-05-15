@@ -1,6 +1,7 @@
 #include "trx_rtplib.h"
 
 #include "rx_rtplib.h"
+#include "payload_type_opus.h"
 
 RtpSession *create_rtp_sendrecv(const char *send_addr_desc, const int send_port, const char *recv_addr_desc, const int recv_port,
                                 unsigned int jitter)
@@ -15,8 +16,14 @@ RtpSession *create_rtp_sendrecv(const char *send_addr_desc, const int send_port,
     rtp_session_set_connected_mode(session, FALSE);
     if (rtp_session_set_remote_addr(session, send_addr_desc, send_port) != 0)
         abort();
-    if (rtp_session_set_payload_type(session, 0) != 0)
+
+    /* set the opus event payload type to 120 in the av profile.
+		opusrtp defaults to sending payload type 120
+	*/
+    rtp_profile_set_payload(&av_profile, 120, &payload_type_opus_mono);
+    if (rtp_session_set_payload_type(session, 120) != 0)
         abort();
+
     if (rtp_session_set_multicast_ttl(session, 16) != 0)
         abort();
     if (rtp_session_set_dscp(session, 40) != 0)

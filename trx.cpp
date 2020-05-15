@@ -65,7 +65,7 @@ static void usage(FILE *fd)
 }
 
 #define DO_SEND 1
-#define DO_RECEIVE 0
+#define DO_RECEIVE 1
 
 int main(int argc, char *argv[])
 {

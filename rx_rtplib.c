@@ -1,4 +1,5 @@
 #include "rx_rtplib.h"
+#include "payload_type_opus.h"
 
 unsigned int verbose; // in rx.c
 
@@ -22,8 +23,14 @@ RtpSession *create_rtp_recv(const char *addr_desc, const int port,
 	rtp_session_enable_adaptive_jitter_compensation(session, TRUE);
 	rtp_session_set_jitter_compensation(session, jitter);  /* ms */
 	rtp_session_set_time_jump_limit(session, jitter * 16); /* ms */
-	if (rtp_session_set_payload_type(session, 0) != 0)
+
+	/* set the opus event payload type to 120 in the av profile.
+		opusrtp defaults to sending payload type 120
+	*/
+	rtp_profile_set_payload(&av_profile, 120, &payload_type_opus_mono);
+	if (rtp_session_set_payload_type(session, 120) != 0)
 		abort();
+
 	if (rtp_session_signal_connect(session, "timestamp_jump",
 								   timestamp_jump, 0) != 0)
 	{
@@ -79,6 +86,6 @@ int run_rx(RtpSession *session,
 
 		/* Follow the RFC, payload 0 has 8kHz reference rate */
 
-		ts += r * 8000 / rate;
+		ts += r; // follow frames played *8000 / rate;
 	}
 }
