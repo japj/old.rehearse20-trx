@@ -50,5 +50,16 @@ jobs:
       with:
         useVcpkgToolchainFile: true  
         
+    - uses: actions/upload-artifact@v2
+      with:
+        path: trx
+
+    - uses: actions/upload-artifact@v2
+      with:
+        path: tx
   
+    - uses: actions/upload-artifact@v2
+      with:
+        path: rx
+
     
