@@ -43,13 +43,13 @@ jobs:
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
         # Since the cache must be invalidated when content of the response file changes, let's
         # compute its hash and append this to the computed cache's key.
-        appendedCacheKey: ${{ hashFiles( env.VCPKGRESPONSEFILE ) }} ${{ hashFiles( 'vcpkg-ports/**' ) }}
-        buildDirectory: '${{ runner.workspace }}/b/'  
+        appendedCacheKey: ${{ hashFiles( env.VCPKGRESPONSEFILE ) }} ${{ hashFiles( 'vcpkg-ports/**' ) }}   
       
     - name: run-cmake
       uses: lukka/run-cmake@v2.4
       with:
-        useVcpkgToolchainFile: true  
+        useVcpkgToolchainFile: true
+        buildDirectory: '${{ runner.workspace }}/b/'    
         
     - uses: actions/upload-artifact@v2
       with:
