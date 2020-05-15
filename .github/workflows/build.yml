@@ -44,6 +44,7 @@ jobs:
         # Since the cache must be invalidated when content of the response file changes, let's
         # compute its hash and append this to the computed cache's key.
         appendedCacheKey: ${{ hashFiles( env.VCPKGRESPONSEFILE ) }} ${{ hashFiles( 'vcpkg-ports/**' ) }}
+        buildDirectory: '${{ runner.workspace }}/b/'  
       
     - name: run-cmake
       uses: lukka/run-cmake@v2.4
@@ -52,14 +53,14 @@ jobs:
         
     - uses: actions/upload-artifact@v2
       with:
-        path: trx
+        path: '${{ runner.workspace }}/b/trx'
 
     - uses: actions/upload-artifact@v2
       with:
-        path: tx
+        path: '${{ runner.workspace }}/b/tx'
   
     - uses: actions/upload-artifact@v2
       with:
-        path: rx
+        path: '${{ runner.workspace }}/b/rx'
 
     
