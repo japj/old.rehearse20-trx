@@ -17,6 +17,8 @@
  *
  */
 
+#include <atomic>
+#include <functional>
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
@@ -38,31 +40,31 @@ unsigned int verbose = DEFAULT_VERBOSE;
 static void usage(FILE *fd)
 {
 	fprintf(fd, "Usage: rx [<parameters>]\n"
-		"Real-time audio receiver over IP\n");
+				"Real-time audio receiver over IP\n");
 
 	fprintf(fd, "\nAudio device (ALSA) parameters:\n");
 	fprintf(fd, "  -d <dev>    Device name (default '%s')\n",
-		DEFAULT_DEVICE);
+			DEFAULT_DEVICE);
 	fprintf(fd, "  -m <ms>     Buffer time (default %d milliseconds)\n",
-		DEFAULT_BUFFER);
+			DEFAULT_BUFFER);
 
 	fprintf(fd, "\nNetwork parameters:\n");
 	fprintf(fd, "  -h <addr>   IP address to listen on (default %s)\n",
-		DEFAULT_ADDR);
+			DEFAULT_ADDR);
 	fprintf(fd, "  -p <port>   UDP port number (default %d)\n",
-		DEFAULT_PORT);
+			DEFAULT_PORT);
 	fprintf(fd, "  -j <ms>     Jitter buffer (default %d milliseconds)\n",
-		DEFAULT_JITTER);
+			DEFAULT_JITTER);
 
 	fprintf(fd, "\nEncoding parameters (must match sender):\n");
 	fprintf(fd, "  -r <rate>   Sample rate (default %dHz)\n",
-		DEFAULT_RATE);
+			DEFAULT_RATE);
 	fprintf(fd, "  -c <n>      Number of channels (default %d)\n",
-		DEFAULT_CHANNELS);
+			DEFAULT_CHANNELS);
 
 	fprintf(fd, "\nProgram parameters:\n");
 	fprintf(fd, "  -v <n>      Verbosity level (default %d)\n",
-		DEFAULT_VERBOSE);
+			DEFAULT_VERBOSE);
 	fprintf(fd, "  -D <file>   Run as a daemon, writing process ID to the given file\n");
 }
 
@@ -75,23 +77,25 @@ int main(int argc, char *argv[])
 
 	/* command-line options */
 	const char *device = DEFAULT_DEVICE,
-		*addr = DEFAULT_ADDR,
-		*pid = NULL;
+			   *addr = DEFAULT_ADDR,
+			   *pid = NULL;
 	unsigned int buffer = DEFAULT_BUFFER,
-		rate = DEFAULT_RATE,
-		jitter = DEFAULT_JITTER,
-		channels = DEFAULT_CHANNELS,
-		port = DEFAULT_PORT;
+				 rate = DEFAULT_RATE,
+				 jitter = DEFAULT_JITTER,
+				 channels = DEFAULT_CHANNELS,
+				 port = DEFAULT_PORT;
 
 	fputs(COPYRIGHT "\n", stderr);
 
-	for (;;) {
+	for (;;)
+	{
 		int c;
 
 		c = getopt(argc, argv, "c:d:h:j:m:p:r:v:");
 		if (c == -1)
 			break;
-		switch (c) {
+		switch (c)
+		{
 		case 'c':
 			channels = atoi(optarg);
 			break;
@@ -126,19 +130,21 @@ int main(int argc, char *argv[])
 	}
 
 	decoder = opus_decoder_create(rate, channels, &error);
-	if (decoder == NULL) {
+	if (decoder == NULL)
+	{
 		fprintf(stderr, "opus_decoder_create: %s\n",
-			opus_strerror(error));
+				opus_strerror(error));
 		return -1;
 	}
 
 	ortp_init();
 	ortp_scheduler_init();
-	session = create_rtp_recv(addr, port, jitter);
+	session = create_rtp_recv(addr, port, jitter, verbose);
 	assert(session != NULL);
 
 	r = snd_pcm_open(&snd, device, SND_PCM_STREAM_PLAYBACK, 0);
-	if (r < 0) {
+	if (r < 0)
+	{
 		aerror("snd_pcm_open", r);
 		return -1;
 	}
@@ -151,7 +157,9 @@ int main(int argc, char *argv[])
 		go_daemon(pid);
 
 	go_realtime();
-	r = run_rx(session, decoder, snd, channels, rate);
+	std::atomic<bool> shouldStop(false);
+
+	r = run_rx(session, decoder, snd, channels, rate, std::ref(shouldStop), verbose);
 
 	if (snd_pcm_close(snd) < 0)
 		abort();

@@ -17,4 +17,6 @@
 
 #define DEFAULT_SSRC 1234567890
 
+#define DEFAULT_AUTOSTOPCOUNT 0
+
 #endif

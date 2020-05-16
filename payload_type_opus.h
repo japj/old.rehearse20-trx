@@ -3,6 +3,15 @@
 
 #include <ortp/payloadtype.h>
 
-PayloadType payload_type_opus_mono;
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    extern PayloadType payload_type_opus_mono;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

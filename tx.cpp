@@ -65,6 +65,8 @@ static void usage(FILE *fd)
 			DEFAULT_BITRATE);
 
 	fprintf(fd, "\nProgram parameters:\n");
+	fprintf(fd, "  -A <n>      Automatic stop after (default %d) messages, 0 = don't stop\n",
+			DEFAULT_AUTOSTOPCOUNT);
 	fprintf(fd, "  -v <n>      Verbosity level (default %d)\n",
 			DEFAULT_VERBOSE);
 	fprintf(fd, "  -D <file>   Run as a daemon, writing process ID to the given file\n");
@@ -91,7 +93,8 @@ int main(int argc, char *argv[])
 				 channels = DEFAULT_CHANNELS,
 				 frame = DEFAULT_FRAME,
 				 kbps = DEFAULT_BITRATE,
-				 port = DEFAULT_PORT;
+				 port = DEFAULT_PORT,
+				 auto_stop_count = DEFAULT_AUTOSTOPCOUNT;
 	uint32_t ssrc = DEFAULT_SSRC;
 
 	fputs(COPYRIGHT "\n", stderr);
@@ -100,7 +103,7 @@ int main(int argc, char *argv[])
 	{
 		int c;
 
-		c = getopt(argc, argv, "b:c:d:f:h:m:p:r:v:D:S:");
+		c = getopt(argc, argv, "b:c:d:f:h:m:p:r:v:A:D:S:");
 		if (c == -1)
 			break;
 
@@ -132,6 +135,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			verbose = atoi(optarg);
+			break;
+		case 'A':
+			auto_stop_count = atoi(optarg);
 			break;
 		case 'D':
 			pid = optarg;
@@ -182,7 +188,7 @@ int main(int argc, char *argv[])
 
 	go_realtime();
 	r = run_tx(snd, channels, frame, encoder, bytes_per_frame,
-			   ts_per_frame, session);
+			   ts_per_frame, session, auto_stop_count, verbose);
 
 	if (snd_pcm_close(snd) < 0)
 		abort();

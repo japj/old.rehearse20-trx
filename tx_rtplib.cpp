@@ -1,8 +1,6 @@
 #include "tx_rtplib.h"
 #include "payload_type_opus.h"
 
-unsigned int verbose; // in tx.c
-
 RtpSession *create_rtp_send(const char *addr_desc, const int port, uint32_t ssrc)
 {
 	RtpSession *session;
@@ -39,9 +37,10 @@ int run_tx(snd_pcm_t *snd,
 		   OpusEncoder *encoder,
 		   const size_t bytes_per_frame,
 		   const unsigned int ts_per_frame,
-		   RtpSession *session)
+		   RtpSession *session, unsigned int auto_stop_count, unsigned int verbose)
 {
-	for (;;)
+	unsigned int cur_count = 0;
+	while (1)
 	{
 		int r;
 
@@ -53,5 +52,14 @@ int run_tx(snd_pcm_t *snd,
 
 		if (verbose > 1)
 			fputc('s', stderr);
+
+		cur_count++;
+		if (auto_stop_count > 0)
+		{
+			if (cur_count == auto_stop_count)
+			{
+				return 1;
+			}
+		}
 	}
 }

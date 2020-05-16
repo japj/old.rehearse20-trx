@@ -1,17 +1,16 @@
 #include "rx_rtplib.h"
 #include "payload_type_opus.h"
 
-unsigned int verbose; // in rx.c
-
-void timestamp_jump(RtpSession *session, void *a, void *b, void *c)
+void timestamp_jump(RtpSession *session, void *a, void *b, void *user_data)
 {
+	unsigned int verbose = (unsigned long)user_data;
 	if (verbose > 1)
 		fputc('|', stderr);
 	rtp_session_resync(session);
 }
 
 RtpSession *create_rtp_recv(const char *addr_desc, const int port,
-							unsigned int jitter)
+							unsigned int jitter, unsigned long verbose)
 {
 	RtpSession *session;
 
@@ -32,7 +31,7 @@ RtpSession *create_rtp_recv(const char *addr_desc, const int port,
 		abort();
 
 	if (rtp_session_signal_connect(session, "timestamp_jump",
-								   timestamp_jump, 0) != 0)
+								   timestamp_jump, (void *)verbose) != 0)
 	{
 		abort();
 	}
@@ -53,7 +52,7 @@ int run_rx(RtpSession *session,
 		   OpusDecoder *decoder,
 		   snd_pcm_t *snd,
 		   const unsigned int channels,
-		   const unsigned int rate)
+		   const unsigned int rate, std::atomic<bool> &shouldStop, unsigned int verbose)
 {
 	int ts = 0;
 
@@ -87,5 +86,10 @@ int run_rx(RtpSession *session,
 		/* Follow the RFC, payload 0 has 8kHz reference rate */
 
 		ts += r; // follow frames played *8000 / rate;
+
+		if (shouldStop)
+		{
+			return 0;
+		}
 	}
 }

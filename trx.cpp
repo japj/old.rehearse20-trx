@@ -58,6 +58,8 @@ static void usage(FILE *fd)
             DEFAULT_BITRATE);
 
     fprintf(fd, "\nProgram parameters:\n");
+    fprintf(fd, "  -A <n>      Automatic stop after (default %d) messages, 0 = don't stop\n",
+            DEFAULT_AUTOSTOPCOUNT);
     fprintf(fd, "  -v <n>      Verbosity level (default %d)\n",
             DEFAULT_VERBOSE);
     fprintf(fd, "  -D <file>   Run as a daemon, writing process ID to the given file\n");
@@ -103,7 +105,8 @@ int main(int argc, char *argv[])
                  frame = DEFAULT_FRAME,
                  kbps = DEFAULT_BITRATE,
                  receive_port = DEFAULT_PORT,
-                 send_port = DEFAULT_PORT;
+                 send_port = DEFAULT_PORT,
+                 auto_stop_count = DEFAULT_AUTOSTOPCOUNT;
     uint32_t ssrc = DEFAULT_SSRC;
 
     fputs(COPYRIGHT "\n", stderr);
@@ -112,7 +115,7 @@ int main(int argc, char *argv[])
     {
         int c;
 
-        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:s:v:D:S:");
+        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:s:v:A:D:S:");
         if (c == -1)
             break;
 
@@ -155,6 +158,9 @@ int main(int argc, char *argv[])
             break;
         case 'v':
             verbose = atoi(optarg);
+            break;
+        case 'A':
+            auto_stop_count = atoi(optarg);
             break;
         case 'D':
             pid = optarg;
@@ -238,21 +244,26 @@ int main(int argc, char *argv[])
     /*r = run_tx(input_snd, channels, frame, encoder, bytes_per_frame,
                ts_per_frame, send_session);*/
 
+    std::atomic<bool> shouldStop(false);
+
 #if DO_SEND
     std::thread send_thread(run_tx, input_snd, channels, frame, encoder, bytes_per_frame,
-                            ts_per_frame, sendrecv_session);
+                            ts_per_frame, sendrecv_session, auto_stop_count, verbose);
 #endif
     /*r = run_rx(receive_session, decoder, output_snd, channels, rate);*/
 
 #if DO_RECEIVE
-    std::thread receive_thread(run_rx, sendrecv_session, decoder, output_snd, channels, rate);
+    std::thread receive_thread(run_rx, sendrecv_session, decoder, output_snd, channels, rate, std::ref(shouldStop), verbose);
 #endif
 
 #if DO_SEND
     send_thread.join();
 #endif
+    printf("\nsend_thread done\n");
+    shouldStop = true;
 #if DO_RECEIVE
     receive_thread.join();
+    printf("\nreceive_thread done\n");
 #endif
 
     if (snd_pcm_close(input_snd) < 0)
