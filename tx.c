@@ -51,6 +51,8 @@ static void usage(FILE *fd)
 			DEFAULT_ADDR);
 	fprintf(fd, "  -p <port>   UDP port number (default %d)\n",
 			DEFAULT_PORT);
+	fprintf(fd, "  -S <ssrc>   SSRC (default %d)\n",
+			DEFAULT_SSRC);
 
 	fprintf(fd, "\nEncoding parameters:\n");
 	fprintf(fd, "  -r <rate>   Sample rate (default %dHz)\n",
@@ -90,6 +92,7 @@ int main(int argc, char *argv[])
 				 frame = DEFAULT_FRAME,
 				 kbps = DEFAULT_BITRATE,
 				 port = DEFAULT_PORT;
+	uint32_t ssrc = DEFAULT_SSRC;
 
 	fputs(COPYRIGHT "\n", stderr);
 
@@ -97,7 +100,7 @@ int main(int argc, char *argv[])
 	{
 		int c;
 
-		c = getopt(argc, argv, "b:c:d:f:h:m:p:r:v:D:");
+		c = getopt(argc, argv, "b:c:d:f:h:m:p:r:v:D:S:");
 		if (c == -1)
 			break;
 
@@ -133,6 +136,9 @@ int main(int argc, char *argv[])
 		case 'D':
 			pid = optarg;
 			break;
+		case 'S':
+			ssrc = atoi(optarg);
+			break;
 		default:
 			usage(stderr);
 			return -1;
@@ -157,7 +163,7 @@ int main(int argc, char *argv[])
 	ortp_init();
 	ortp_scheduler_init();
 	ortp_set_log_level_mask(NULL, ORTP_WARNING | ORTP_ERROR);
-	session = create_rtp_send(addr, port);
+	session = create_rtp_send(addr, port, ssrc);
 	assert(session != NULL);
 
 	r = snd_pcm_open(&snd, device, SND_PCM_STREAM_CAPTURE, 0);

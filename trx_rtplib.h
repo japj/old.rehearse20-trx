@@ -9,7 +9,7 @@ extern "C"
 #endif
 
     RtpSession *create_rtp_sendrecv(const char *send_addr_desc, const int send_port, const char *recv_addr_desc, const int recv_port,
-                                    unsigned int jitter);
+                                    unsigned int jitter, uint32_t ssrc);
 
 #ifdef __cplusplus
 }

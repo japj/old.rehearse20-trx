@@ -44,6 +44,8 @@ static void usage(FILE *fd)
             DEFAULT_PORT);
     fprintf(fd, "  -j <ms>     Jitter buffer (default %d milliseconds)\n",
             DEFAULT_JITTER);
+    fprintf(fd, "  -S <ssrc>   SSRC (default %d)\n",
+            DEFAULT_SSRC);
 
     fprintf(fd, "\nEncoding parameters:\n");
     fprintf(fd, "  -r <rate>   Sample rate (default %dHz)\n",
@@ -102,6 +104,7 @@ int main(int argc, char *argv[])
                  kbps = DEFAULT_BITRATE,
                  receive_port = DEFAULT_PORT,
                  send_port = DEFAULT_PORT;
+    uint32_t ssrc = DEFAULT_SSRC;
 
     fputs(COPYRIGHT "\n", stderr);
 
@@ -109,7 +112,7 @@ int main(int argc, char *argv[])
     {
         int c;
 
-        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:s:v:D:");
+        c = getopt(argc, argv, "b:c:f:h:i:j:m:o:p:r:s:v:D:S:");
         if (c == -1)
             break;
 
@@ -156,6 +159,9 @@ int main(int argc, char *argv[])
         case 'D':
             pid = optarg;
             break;
+        case 'S':
+            ssrc = atoi(optarg);
+            break;
         default:
             usage(stderr);
             return -1;
@@ -192,7 +198,7 @@ int main(int argc, char *argv[])
 
 #if DO_RECEIVE
 #if DO_SEND
-    sendrecv_session = create_rtp_sendrecv(send_addr, send_port, "0.0.0.0", receive_port, jitter);
+    sendrecv_session = create_rtp_sendrecv(send_addr, send_port, "0.0.0.0", receive_port, jitter, ssrc);
 #else
     sendrecv_session = create_rtp_recv("0.0.0.0", receive_port, jitter);
 #endif

@@ -15,4 +15,6 @@
 
 #define DEFAULT_VERBOSE 2
 
+#define DEFAULT_SSRC 1234567890
+
 #endif

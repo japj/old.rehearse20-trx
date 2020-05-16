@@ -19,3 +19,4 @@ CTestTestfile.cmake
 _deps
 Makefile
 trx
+build/

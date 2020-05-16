@@ -3,7 +3,7 @@
 
 unsigned int verbose; // in tx.c
 
-RtpSession *create_rtp_send(const char *addr_desc, const int port)
+RtpSession *create_rtp_send(const char *addr_desc, const int port, uint32_t ssrc)
 {
 	RtpSession *session;
 
@@ -27,6 +27,8 @@ RtpSession *create_rtp_send(const char *addr_desc, const int port)
 		abort();
 	if (rtp_session_set_dscp(session, 40) != 0)
 		abort();
+
+	rtp_session_set_ssrc(session, ssrc);
 
 	return session;
 }

@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-	RtpSession *create_rtp_send(const char *addr_desc, const int port);
+	RtpSession *create_rtp_send(const char *addr_desc, const int port, uint32_t ssrc);
 	int run_tx(snd_pcm_t *snd,
 			   const unsigned int channels,
 			   const snd_pcm_uframes_t frame,
